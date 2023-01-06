@@ -61,32 +61,7 @@ class Main {
         for (y in 0 until h) {
             val mapRow = mutableListOf<Double>()
             for (x in 0 until w) {
-                val e: Double
-                if (x == 0) {
-                    e = if (y == 0) { // NW corner
-                        sqrt(deltaX2(x + 1, y) + deltaY2(x, y + 1))
-                    } else if (y == h - 1) { // SW corner
-                        sqrt(deltaX2(x + 1, y) + deltaY2(x, y - 1))
-                    } else { // west border
-                        sqrt(deltaX2(x + 1, y) + deltaY2(x, y))
-                    }
-                } else if (y == 0) { // x != 0
-                    e = if (x == w - 1) { // NE corner
-                        sqrt(deltaX2(x - 1, y) + deltaY2(x, y + 1))
-                    } else { // north border
-                        sqrt(deltaX2(x, y) + deltaY2(x, y + 1))
-                    }
-                } else { // x != 0 and y != 0
-                    e = if (x == w - 1 && y == h - 1) { // SE corner
-                        sqrt(deltaX2(x - 1, y) + deltaY2(x, y - 1))
-                    } else if (y == h - 1) { // south border
-                        sqrt(deltaX2(x, y) + deltaY2(x, y - 1))
-                    } else if (x == w - 1) { // east border
-                        sqrt(deltaX2(x - 1, y) + deltaY2(x, y))
-                    } else { // all others
-                        sqrt(deltaX2(x, y) + deltaY2(x, y))
-                    }
-                }
+                val e = sqrt(deltaX2(x, y) + deltaY2(x, y))
                 mapRow.add(x, e)
                 maxEnergy = max(maxEnergy, e)
             }
@@ -106,18 +81,23 @@ class Main {
 
     // Rx(x, y)^2 + Gx(x, y)^2 + Bx(x, y)^2
     private fun deltaX2(x: Int, y: Int): Double {
-        return (square(dx(x, y, RED_INDEX)) + square(dx(x, y, GREEN_INDEX)) + square(dx(x, y, BLUE_INDEX))).toDouble()
+        val x1 = if (x == 0) 1 else if (x == w - 1)  x - 1 else x
+        return (square(dx(x1, y, RED_INDEX)) +
+                square(dx(x1, y, GREEN_INDEX)) +
+                square(dx(x1, y, BLUE_INDEX))).toDouble()
     }
 
     // Ry(x, y)^2 + Gy(x, y)^2 + By(x, y)^2
     private fun deltaY2(x: Int, y: Int): Double {
-        return (square(dy(x, y, RED_INDEX)) + square(dy(x, y, GREEN_INDEX)) + square(dy(x, y, BLUE_INDEX))).toDouble()
+        val y1 = if (y == 0) 1 else if (y == h - 1) y - 1 else y
+        return (square(dy(x, y1, RED_INDEX)) +
+                square(dy(x, y1, GREEN_INDEX)) +
+                square(dy(x, y1, BLUE_INDEX))).toDouble()
     }
 
     // Cx = [x - 1, y] - [x + 1, y], C = color
     private fun dx(x: Int, y: Int, color: Int): Int {
         return matrix[y][x - 1][color] - matrix[y][x + 1][color]
-
     }
 
     // Cy = [x, y - 1] - [x, y + 1], C = color
