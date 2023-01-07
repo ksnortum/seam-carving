@@ -1,0 +1,4 @@
+package seamcarving
+
+class Seam {
+}
