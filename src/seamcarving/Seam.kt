@@ -18,11 +18,11 @@ class Seam {
         const val BLUE_INDEX = 2
     }
 
-    fun findSeam(input: String, output: String) {
+    fun findVerticalSeam(input: String, output: String) {
         val image = ImageIO.read(File(input))
         buildMatrix(image) // sets w and h
         buildEnergyMap()
-        val seam = createSeam()
+        val seam = createVerticalSeam()
         processImage(image, seam)
         ImageIO.write(image, "png", File(output))
     }
@@ -56,14 +56,14 @@ class Seam {
         }
     }
 
-    private fun createSeam(): MutableList<Pair<Int, Int>> {
+    private fun createVerticalSeam(): MutableList<Pair<Int, Int>> {
         return buildLowestSeam(buildLowestEnergyMatrix())
     }
 
     private fun buildLowestEnergyMatrix(): Array<DoubleArray> {
         val lowestEnergyMatrix = energyMap.copyOf()
 
-        for (y in 0 until h) {
+        for (y in 1 until h) {
             for (x in 0 until w) {
                 lowestEnergyMatrix[y][x] += lowestAbove(x, y)
             }
@@ -73,11 +73,7 @@ class Seam {
     }
 
     private fun lowestAbove(x: Int, y: Int): Double {
-        return if (y == 0) {
-            0.0
-        } else {
-            listOf(above(x - 1, y - 1), above(x, y - 1), above(x + 1, y - 1)).minOf { it }
-        }
+        return listOf(above(x - 1, y - 1), above(x, y - 1), above(x + 1, y - 1)).minOf { it }
     }
 
     private fun above(x: Int, y: Int): Double {

@@ -6,7 +6,7 @@ fun main(args: Array<String>) {
     val argsMap = getArgsMap(args)
     val input = argsMap["in"] ?: throw IllegalArgumentException("'in' not found")
     val output = argsMap["out"] ?: throw  IllegalArgumentException("'out' not found")
-    Seam().findSeam(input, output)
+    Seam().findVerticalSeam(input, output)
 }
 
 fun getArgsMap(args: Array<String>): Map<String, String> {
