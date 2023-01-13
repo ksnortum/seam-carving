@@ -8,7 +8,7 @@ import kotlin.math.sqrt
 
 class Seam {
     private val matrix = mutableListOf(mutableListOf(mutableListOf<Int>()))
-    private lateinit var energyMap: Array<DoubleArray> // = arrayOf<DoubleArray>()
+    private lateinit var energyMap: Array<DoubleArray>
     private var w = 0
     private var h = 0
 
@@ -16,8 +16,6 @@ class Seam {
         const val RED_INDEX = 0
         const val GREEN_INDEX = 1
         const val BLUE_INDEX = 2
-
-        const val UNDEFINED = -1
     }
 
     fun findSeam(input: String, output: String) {
@@ -59,149 +57,71 @@ class Seam {
     }
 
     private fun createSeam(): MutableList<Pair<Int, Int>> {
-        val source = 0
-        val target = w * (h + 2) - 1
-        val previous = dijkstra(source, target)
-        val seam = mutableListOf<Pair<Int, Int>>() // S (sequence)
-        var u = target
-        var x = u % w
-        var y = u / w
+        return buildLowestSeam(buildLowestEnergyMatrix())
+    }
 
-        if (previous[u] != UNDEFINED || u == source) {
-            while (u != UNDEFINED) {
-                // no imaginary top and bottom row
-                if (y in 1 until h - 1) {
-                    // y is offset by 1 because there is an imaginary "zero row"
-                    seam.add(0, x to y - 1)
-                }
-                u = previous[u]
-                x = u % w
-                y = u / w
+    private fun buildLowestEnergyMatrix(): Array<DoubleArray> {
+        val lowestEnergyMatrix = energyMap.copyOf()
+
+        for (y in 0 until h) {
+            for (x in 0 until w) {
+                lowestEnergyMatrix[y][x] += lowestAbove(x, y)
             }
         }
 
-        println("Out of createSeam()") // TODO testing
-
-        return seam
+        return lowestEnergyMatrix
     }
 
-    // TODO used energyMap needs zero on top and bottom
-    private fun dijkstra(source: Int, target: Int): IntArray {
-        val size = w * (h + 2) // zeros top and bottom
-        val distance = DoubleArray(size) { Double.MAX_VALUE }  // dist[]
-        distance[source] = 0.0
-        val previous = IntArray(size) { UNDEFINED }  // prev[]
-        // val vertices = IntArray(size) // Q
-        val vertices = mutableListOf<Int>()
-        for (i in 0 until size) vertices.add(i)
+    private fun lowestAbove(x: Int, y: Int): Double {
+        return if (y == 0) {
+            0.0
+        } else {
+            listOf(above(x - 1, y - 1), above(x, y - 1), above(x + 1, y - 1)).minOf { it }
+        }
+    }
 
-        while (vertices.isNotEmpty()) {
-            val u = vertexWithMinDistance(vertices, distance)
-            if (u == target) break // end early if target
-            vertices.removeAt(u)
-            // print(if (vertices.size % 1000 == 0) "." else "") // TODO testing
+    private fun above(x: Int, y: Int): Double {
+        return if (x in 0 until w) {
+            energyMap[y][x]
+        } else {
+            Double.MAX_VALUE
+        }
+    }
 
-            for (v in neighbors(u)) {
-                val x = v % w
-                val y = v / w
-                // energyMap has imaginary zeros top and bottom
-                val alt = if (y == 0 || y == h + 1) 0.0 else distance[u] + energyMap[y - 1][x]
+    private fun buildLowestSeam(lowestEnergyMatrix: Array<DoubleArray>): MutableList<Pair<Int, Int>> {
+        val lowestSeam = mutableListOf<Pair<Int, Int>>()
 
-                if (alt < distance[v]) {
-                    distance[v] = alt
-                    previous[v] = u
-                }
-            }
+        // Find the index of the lowest energy on the bottom row
+        val bottomRow = lowestEnergyMatrix[h - 1].asList()
+        val indexOfLeast = bottomRow.withIndex().minByOrNull { it.value }!!.index
+        lowestSeam.add(indexOfLeast to h - 1)
+
+        // Work back up to top by lowest energy
+        var y1 = h - 2
+        var x1 = indexOfLeast
+
+        while (y1 >= 0) {
+            val threeAbove = listOfAbove(lowestEnergyMatrix[y1], x1)
+            val indexOfLowest = threeAbove.withIndex().minByOrNull { it.value }!!.index
+            x1 += indexOfLowest - 1
+            lowestSeam.add(0, x1 to y1)
+            y1--
         }
 
-        println("Out of dijkstra()") // TODO testing
-
-        return previous
+        return lowestSeam
     }
 
-    private fun vertexWithMinDistance(vertices: List<Int>, distance: DoubleArray): Int {
-        var lowestDistanceIndex = 0
-        var lowestDistance = Double.MAX_VALUE
+    private fun listOfAbove(row: DoubleArray, x: Int): List<Double> {
+        val threeAbove = mutableListOf<Double>()
+        if (x > 0) threeAbove.add(row[x - 1]) else threeAbove.add(Double.MAX_VALUE)
+        threeAbove.add(row[x])
+        if (x < w) threeAbove.add(row[x + 1]) else threeAbove.add(Double.MAX_VALUE)
 
-        for (u in vertices) {
-            if (distance[u] < lowestDistance) {
-                lowestDistanceIndex = u
-                lowestDistance = distance[u]
-            }
-        }
-
-        // println("lowestDistanceIndex = $lowestDistanceIndex") // TODO testing
-
-        return lowestDistanceIndex
+        return threeAbove
     }
-
-    // energyMap has imaginary zeros on top and bottom
-    private fun neighbors(u: Int): List<Int> {
-        val neighbors = mutableListOf<Int>()
-        val x = u % w
-        val y = u / w
-        if (x < w && (y == 0 || y == h + 1)) neighbors.add(u + 1) // sideways on top and bottom
-        val u1 = u + w // row below
-
-        if (u1 / w < h + 1) { // not on bottom row
-            neighbors.add(u1 + w) // center
-            if (x > 0) neighbors.add(u1 + w - 1) // left
-            if (x < w) neighbors.add(u1 + w + 1) // right
-        }
-
-        // println("neighbors = $neighbors") // TODO testing
-
-        return neighbors
-    }
-
-//    private fun createSeam(): MutableList<Pair<Int, Int>> {
-//        // Go across row zero and find the lowest energy path
-//        var lowestSeam = mutableListOf<Pair<Int, Int>>()
-//        var lowestEnergy = Double.MAX_VALUE
-//
-//        for (x in 0 until w) {
-//            val seam = mutableListOf<Pair<Int, Int>>()
-//            val energy = followLeast(seam, x, 0)
-//
-//            if (energy < lowestEnergy) {
-//                lowestSeam = seam
-//                lowestEnergy = energy
-//            }
-//        }
-//
-//        print("lowestEnergy = $lowestEnergy, lowestSeam total = ") // TODO testing
-//        println(lowestSeam.fold(0.0) { total, item -> total + energyMap[item.second][item.first] }) // TODO testing
-//        return lowestSeam
-//    }
-
-//    private fun followLeast(seam: MutableList<Pair<Int, Int>>, x: Int, y: Int): Double {
-//        seam.add(Pair(x, y))
-//        val energy = energyMap[y][x]
-//
-//        if (y == h - 1) {
-//            return energy
-//        }
-//
-//        val y1 = y + 1
-//        val energies = listOf(below(x - 1, y1), below(x, y1), below(x + 1, y1))
-//        // Index of which of the three energies is lowest
-//        val energyIndex = energies.withIndex().minByOrNull { it.value }?.index ?: throw NullPointerException()
-//        val x1 = x + energyIndex - 1
-//
-//        return energy + followLeast(seam, x1, y1)
-//    }
-
-//    private fun below(x: Int, y: Int): Double {
-//        return if (x < 0 || x >= w) {
-//            Double.MAX_VALUE // OOB is never the least
-//        } else {
-//            energyMap[y][x]
-//        }
-//    }
 
     private fun processImage(image: BufferedImage, seam: List<Pair<Int, Int>>) {
         for (coordinates in seam) {
-            // println(coordinates) // TODO testing
             image.setRGB(coordinates.first, coordinates.second, Color.RED.rgb)
         }
     }
