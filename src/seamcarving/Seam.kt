@@ -6,31 +6,30 @@ import java.io.File
 import javax.imageio.ImageIO
 import kotlin.math.sqrt
 
-class Seam {
+class Seam(private val input: String, private val output: String, private val isVertical: Boolean) {
     private val matrix = mutableListOf(mutableListOf(mutableListOf<Int>()))
     private lateinit var energyMap: Array<DoubleArray>
     private var w = 0
     private var h = 0
 
-    companion object {
+    private companion object {
         const val RED_INDEX = 0
         const val GREEN_INDEX = 1
         const val BLUE_INDEX = 2
     }
 
-    fun findVerticalSeam(input: String, output: String) {
+    fun processSeam() {
         val image = ImageIO.read(File(input))
-        buildMatrix(image) // sets w and h
+        w = image.width
+        h = image.height
+        buildMatrix(image)
         buildEnergyMap()
-        val seam = createVerticalSeam()
+        val seam = if (isVertical) createVerticalSeam() else createHorizontalSeam()
         processImage(image, seam)
         ImageIO.write(image, "png", File(output))
     }
 
     private fun buildMatrix(image: BufferedImage) {
-        w = image.width
-        h = image.height
-
         for (y in 0 until h) {
             val matrixRow = mutableListOf<MutableList<Int>>()
             for (x in 0 until w) {
@@ -57,10 +56,14 @@ class Seam {
     }
 
     private fun createVerticalSeam(): MutableList<Pair<Int, Int>> {
-        return buildLowestSeam(buildLowestEnergyMatrix())
+        return buildLowestVerticalSeam(buildLowestVerticalEnergyMatrix())
     }
 
-    private fun buildLowestEnergyMatrix(): Array<DoubleArray> {
+    private fun createHorizontalSeam(): MutableList<Pair<Int, Int>> {
+        return buildLowestHorizontalSeam(buildLowestHorizontalEnergyMatrix())
+    }
+
+    private fun buildLowestVerticalEnergyMatrix(): Array<DoubleArray> {
         val lowestEnergyMatrix = energyMap.copyOf()
 
         for (y in 1 until h) {
@@ -84,7 +87,31 @@ class Seam {
         }
     }
 
-    private fun buildLowestSeam(lowestEnergyMatrix: Array<DoubleArray>): MutableList<Pair<Int, Int>> {
+    private fun buildLowestHorizontalEnergyMatrix(): Array<DoubleArray> {
+        val lowestEnergyMatrix = energyMap.copyOf()
+
+        for (x in 1 until w) {
+            for (y in 0 until h) {
+                lowestEnergyMatrix[y][x] += lowestLeft(x, y)
+            }
+        }
+
+        return lowestEnergyMatrix
+    }
+
+    private fun lowestLeft(x: Int, y: Int): Double {
+        return listOf(left(x - 1, y - 1), left(x - 1, y), left(x - 1, y + 1)).minOf { it }
+    }
+
+    private fun left(x: Int, y: Int): Double {
+        return if (y in 0 until h) {
+            energyMap[y][x]
+        } else {
+            Double.MAX_VALUE
+        }
+    }
+
+    private fun buildLowestVerticalSeam(lowestEnergyMatrix: Array<DoubleArray>): MutableList<Pair<Int, Int>> {
         val lowestSeam = mutableListOf<Pair<Int, Int>>()
 
         // Find the index of the lowest energy on the bottom row
@@ -114,6 +141,38 @@ class Seam {
         if (x < w) threeAbove.add(row[x + 1]) else threeAbove.add(Double.MAX_VALUE)
 
         return threeAbove
+    }
+
+    private fun buildLowestHorizontalSeam(lowestEnergyMatrix: Array<DoubleArray>): MutableList<Pair<Int, Int>> {
+        val lowestSeam = mutableListOf<Pair<Int, Int>>()
+
+        // Find the index of the lowest energy on the rightmost row
+        val rightmostColumn = lowestEnergyMatrix.map { it[w - 1] }.toList()
+        val indexOfLeast = rightmostColumn.withIndex().minByOrNull { it.value }!!.index
+        lowestSeam.add(w - 1 to indexOfLeast)
+
+        // Work back to leftmost by lowest energy
+        var y1 = indexOfLeast
+        var x1 = w - 2
+
+        while (x1 >= 0) {
+            val threeLeftward = listOfLeft(lowestEnergyMatrix.map { it[x1] }, y1)
+            val indexOfLowest = threeLeftward.withIndex().minByOrNull { it.value }!!.index
+            y1 += indexOfLowest - 1
+            lowestSeam.add(0, x1 to y1)
+            x1--
+        }
+
+        return lowestSeam
+    }
+
+    private fun listOfLeft(column: List<Double>, y: Int): List<Double> {
+        val threeToLeft = mutableListOf<Double>()
+        if (y > 0) threeToLeft.add(column[y - 1]) else threeToLeft.add(Double.MAX_VALUE)
+        threeToLeft.add(column[y])
+        if (y < h - 1) threeToLeft.add(column[y + 1]) else threeToLeft.add(Double.MAX_VALUE)
+
+        return threeToLeft
     }
 
     private fun processImage(image: BufferedImage, seam: List<Pair<Int, Int>>) {
