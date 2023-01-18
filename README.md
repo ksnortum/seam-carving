@@ -4,7 +4,10 @@ This is a school [project from HyperSkill](https://hyperskill.org/projects/100) 
 ### Execution
 
 Running the app requires compiling, creating a jar file, then executing it in Java.  See [this link](
-https://kotlinlang.org/docs/command-line.html) for details.
+https://kotlinlang.org/docs/command-line.html) for details, but this should work:
+
+    kotlinc -include-runtime -d seamcarving.jar src/seamcarving/*.kt
+    java -jar seamcarving -in <filename> -out <filename> -width <reduce width by> -height <reduce height by>
 
 The app takes four options:
 
