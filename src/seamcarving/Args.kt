@@ -50,9 +50,6 @@ class Args(private val args: Array<String>) {
             if (!file.exists()) println("File name does not exist")
         }
 
-        argsMap["ext"] = inputFile.substringAfterLast(".", "")
-        if (argsMap["ext"] != "png") println("The app can only process PNG files at the moment")
-
         return inputFile
     }
 

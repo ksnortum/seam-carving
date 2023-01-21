@@ -2,8 +2,7 @@ package seamcarving
 
 import java.awt.image.BufferedImage
 
-class Seam(private val image: BufferedImage) {
-
+class Seam(private val image: BufferedImage, private val ext: String) {
     private val energyMap = EnergyMap(image).buildEnergyMap()
     private val w = image.width
     private val h = image.height
@@ -133,15 +132,16 @@ class Seam(private val image: BufferedImage) {
     }
 
     private fun processImage(seam: List<Pair<Int, Int>>, isVertical: Boolean): BufferedImage {
+        val bufferedImageType = if (ext == "png") BufferedImage.TYPE_INT_ARGB else BufferedImage.TYPE_INT_RGB
         return if (isVertical) {
-            processImageVertically(seam)
+            processImageVertically(seam, bufferedImageType)
         } else {
-            processImageHorizontally(seam)
+            processImageHorizontally(seam, bufferedImageType)
         }
     }
 
-    private fun processImageVertically(seam: List<Pair<Int, Int>>): BufferedImage {
-        val newImage = BufferedImage(w - 1, h, BufferedImage.TYPE_INT_ARGB)
+    private fun processImageVertically(seam: List<Pair<Int, Int>>, bufferedImageType: Int): BufferedImage {
+        val newImage = BufferedImage(w - 1, h, bufferedImageType)
 
         for (coordinates in seam) {
             val y = coordinates.second
@@ -158,8 +158,8 @@ class Seam(private val image: BufferedImage) {
         return newImage
     }
 
-    private fun processImageHorizontally(seam: List<Pair<Int, Int>>): BufferedImage {
-        val newImage = BufferedImage(w, h - 1, BufferedImage.TYPE_INT_ARGB)
+    private fun processImageHorizontally(seam: List<Pair<Int, Int>>, bufferedImageType: Int): BufferedImage {
+        val newImage = BufferedImage(w, h - 1, bufferedImageType)
 
         for (coordinates in seam) {
             val x = coordinates.first
