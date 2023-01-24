@@ -45,9 +45,9 @@ class Args(private val args: Array<String>) {
         var file = File(inputFile)
 
         while (!file.exists()) {
+            println("File name does not exist")
             inputFile = promptForString(prompt)
             file = File(inputFile)
-            if (!file.exists()) println("File name does not exist")
         }
 
         return inputFile
